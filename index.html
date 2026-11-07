@@ -17,7 +17,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); padding: 16px; display: flex; justify-content: center; min-height: 100vh; }
     .container { width: 100%; max-width: 420px; }
-    .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); margin-bottom: 16px; border: 1px solid #e2e8f0; }
+    .card { background: var(--card); border-radius: 14px; padding: 22px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); margin-bottom: 16px; border: 1px solid #e2e8f0; }
     .header { text-align: center; margin-bottom: 20px; }
     .header h2 { font-size: 1.25rem; color: var(--primary); }
     .header p { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
@@ -29,6 +29,11 @@
     .input-field { width: 100%; padding: 12px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
     .status-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; background: #fee2e2; color: #b91c1c; }
     .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #b91c1c; margin-right: 6px; animation: pulse 1.2s infinite; }
+    
+    /* Live Visual Audio VU Meter */
+    .vu-meter-wrap { width: 100%; background: #e2e8f0; height: 16px; border-radius: 8px; overflow: hidden; margin: 12px 0; }
+    .vu-meter-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #10b981 60%, #f59e0b 85%, #ef4444 100%); transition: width 0.05s linear; }
+
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
   </style>
 </head>
@@ -39,14 +44,14 @@
       <p>Live Audio Tour Broadcast</p>
     </div>
 
-    <!-- View 1: Select Role -->
+    <!-- Step 1: Role Selection -->
     <div id="view-role" class="card">
       <h3 style="font-size: 1.05rem; margin-bottom: 14px; text-align: center;">Select Your Role</h3>
       <button class="btn btn-primary" onclick="showAudienceView()">🎧 Audience / Visitor</button>
       <button class="btn btn-accent" style="margin-top: 12px;" onclick="showGuideAuthView()">🎤 Tour Guide Login</button>
     </div>
 
-    <!-- View 2: Guide Setup -->
+    <!-- Step 2: Guide Setup -->
     <div id="view-guide-auth" class="card hidden">
       <h3 style="font-size: 1.05rem; margin-bottom: 12px;">Tour Guide Setup</h3>
       <label style="font-size: 0.85rem; font-weight: 600;">Tour Guide Passcode</label>
@@ -55,52 +60,73 @@
       <label style="font-size: 0.85rem; font-weight: 600;">Channel Number</label>
       <input type="number" id="guide-channel-no" class="input-field" value="1" />
 
-      <label style="font-size: 0.85rem; font-weight: 600;">Tour / Group Name</label>
-      <input type="text" id="guide-tour-name" class="input-field" placeholder="e.g. VIP Delegation" />
+      <label style="font-size: 0.85rem; font-weight: 600;">Tour Name</label>
+      <input type="text" id="guide-tour-name" class="input-field" placeholder="e.g. VIP Cargo Tour" />
 
-      <button id="btn-start" class="btn btn-accent" onclick="startBroadcast()">🚀 Start Broadcast</button>
+      <button id="btn-start" class="btn btn-accent" onclick="startBroadcaster()">🚀 Start Broadcast</button>
       <button class="btn" style="background:#e2e8f0; margin-top:8px;" onclick="resetViews()">Back</button>
     </div>
 
-    <!-- View 3: Guide Dashboard (On Air) -->
+    <!-- Step 3: Guide Dashboard (On Air) -->
     <div id="view-guide-live" class="card hidden">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
         <span class="status-badge"><span class="live-dot"></span>LIVE ON AIR</span>
-        <span id="guide-listener-count" style="font-size: 0.85rem; font-weight: 600; color: #475569;">0 Connected</span>
+        <span id="guide-listeners" style="font-size: 0.85rem; font-weight: 600; color: #475569;">0 Connected</span>
       </div>
       <h3 id="guide-ch-title" style="color: var(--primary); margin-bottom: 8px;"></h3>
-      <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 16px;">Microphone active. Visitors can now listen to this channel.</p>
       
+      <!-- Mic Activity Feedback Bar -->
+      <label style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Microphone Input Level:</label>
+      <div class="vu-meter-wrap">
+        <div id="mic-meter-bar" class="vu-meter-bar"></div>
+      </div>
+      <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 16px;">Green bar will bounce when you speak.</p>
+
       <button id="btn-mute" class="btn btn-primary" onclick="toggleMute()">🎙️ Mute Microphone</button>
-      <button class="btn btn-danger" onclick="endBroadcast()">⏹️ End Tour</button>
+      <button class="btn btn-danger" onclick="endTour()">⏹️ End Tour</button>
     </div>
 
-    <!-- View 4: Audience Join -->
+    <!-- Step 4: Audience Join -->
     <div id="view-audience-join" class="card hidden">
       <h3 style="font-size: 1.05rem; margin-bottom: 12px;">Join Tour Channel</h3>
       <label style="font-size: 0.85rem; font-weight: 600;">Channel Number</label>
       <input type="number" id="audience-channel-no" class="input-field" value="1" />
-      <button id="btn-audience-join" class="btn btn-primary" onclick="joinChannel()">🎧 Connect & Listen</button>
+      <button id="btn-join" class="btn btn-primary" onclick="joinChannel()">🎧 Connect & Listen</button>
       <button class="btn" style="background:#e2e8f0; margin-top:8px;" onclick="resetViews()">Back</button>
     </div>
 
-    <!-- View 5: Audience Receiver -->
+    <!-- Step 5: Audience Receiver Player -->
     <div id="view-audience-player" class="card hidden">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
         <span class="status-badge" style="background:#dcfce7; color:#15803d;">CONNECTED</span>
       </div>
-      <h3 id="audience-ch-title" style="color: var(--primary); margin-bottom: 8px;"></h3>
-      <p style="font-size:0.85rem; color:#64748b; margin-bottom:14px;">Connected to Tour Guide. Earphones recommended.</p>
-      <audio id="remote-audio" autoplay playsinline></audio>
-      <button id="btn-audio-unmute" class="btn btn-accent" onclick="unmuteAudio()">▶️ Tap to Hear Audio</button>
-      <button class="btn btn-danger" style="margin-top:10px;" onclick="location.reload()">Leave Channel</button>
+      <h3 id="audience-ch-title" style="color: var(--primary); margin-bottom: 6px;"></h3>
+      <p style="font-size:0.85rem; color:#64748b; margin-bottom:14px;">Connected to tour broadcast.</p>
+
+      <!-- Hidden Audio Element -->
+      <audio id="remote-audio" playsinline webkit-playsinline></audio>
+
+      <!-- iOS Required Unmute/Play Trigger -->
+      <button id="btn-audio-unmute" class="btn btn-accent" onclick="playAudioStream()">🔊 Tap to Turn On Sound</button>
+      
+      <p id="audio-status-text" style="font-size:0.8rem; color:#15803d; font-weight:600; text-align:center; margin-top:10px; display:none;">
+        ✅ Audio is playing through your speaker / earphones
+      </p>
+
+      <button class="btn btn-danger" style="margin-top:14px;" onclick="location.reload()">Leave Channel</button>
     </div>
   </div>
 
   <script>
     const PASSCODE = "P18825-20261120";
     const PREFIX = "hactl-st1-ch";
-    let peer = null, localStream = null, isMuted = false, activeCalls = [];
+
+    let peer = null;
+    let localStream = null;
+    let isMuted = false;
+    let activeCalls = [];
+    let audioCtx = null;
+    let remoteMediaStream = null;
 
     function hideAll() {
       ['view-role', 'view-guide-auth', 'view-guide-live', 'view-audience-join', 'view-audience-player'].forEach(id => {
@@ -112,7 +138,7 @@
     function showAudienceView() { hideAll(); document.getElementById('view-audience-join').classList.remove('hidden'); }
 
     // --- Tour Guide Logic ---
-    async function startBroadcast() {
+    async function startBroadcaster() {
       const code = document.getElementById('guide-passcode').value.trim();
       const chNum = document.getElementById('guide-channel-no').value.trim() || '1';
       const tourName = document.getElementById('guide-tour-name').value.trim() || 'ST1 Tour';
@@ -121,26 +147,35 @@
       if (code !== PASSCODE) return alert('Invalid Passcode!');
 
       startBtn.disabled = true;
-      startBtn.innerText = "Requesting Microphone...";
+      startBtn.innerText = "Accessing Microphone...";
 
       try {
         localStream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          },
           video: false
         });
       } catch (err) {
         startBtn.disabled = false;
         startBtn.innerText = "🚀 Start Broadcast";
-        alert("Microphone Access Error: " + err.message);
+        alert("Microphone Error: " + err.message);
         return;
       }
 
+      // Attach VU Meter to show visual sound bars
+      attachVUMeter(localStream);
+
+      // Initialize Peer
       const peerId = `${PREFIX}-${chNum}`;
       peer = new Peer(peerId, {
         config: {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
           ]
         }
       });
@@ -155,16 +190,18 @@
         startBtn.disabled = false;
         startBtn.innerText = "🚀 Start Broadcast";
         if (err.type === 'unavailable-id') {
-          alert(`Channel ${chNum} is already active by another guide. Choose another channel number.`);
+          alert(`Channel ${chNum} is already active! Choose another channel number.`);
         } else {
-          alert('Network/Peer error: ' + err.type);
+          alert('Connection Error: ' + err.type);
         }
       });
 
+      // Answer listener calls with the microphone stream
       peer.on('call', (call) => {
         call.answer(localStream);
         activeCalls.push(call);
         updateListenerCount();
+
         call.on('close', () => {
           activeCalls = activeCalls.filter(c => c !== call);
           updateListenerCount();
@@ -172,8 +209,31 @@
       });
     }
 
+    function attachVUMeter(stream) {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const meterBar = document.getElementById('mic-meter-bar');
+
+      function updateMeter() {
+        if (!localStream) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        let avg = sum / dataArray.length;
+        let percent = Math.min(100, Math.round((avg / 128) * 100));
+        if (meterBar) meterBar.style.width = percent + '%';
+        requestAnimationFrame(updateMeter);
+      }
+      updateMeter();
+    }
+
     function updateListenerCount() {
-      const el = document.getElementById('guide-listener-count');
+      const el = document.getElementById('guide-listeners');
       if (el) el.innerText = `${activeCalls.length} Connected`;
     }
 
@@ -186,7 +246,7 @@
       btn.style.background = isMuted ? '#d32f2f' : 'var(--primary)';
     }
 
-    function endBroadcast() {
+    function endTour() {
       if (localStream) localStream.getTracks().forEach(t => t.stop());
       if (peer) peer.destroy();
       location.reload();
@@ -196,19 +256,30 @@
     function joinChannel() {
       const chNum = document.getElementById('audience-channel-no').value.trim() || '1';
       const targetGuideId = `${PREFIX}-${chNum}`;
-      const joinBtn = document.getElementById('btn-audience-join');
+      const joinBtn = document.getElementById('btn-join');
 
       joinBtn.disabled = true;
       joinBtn.innerText = "Connecting...";
 
+      // Audience initializes their AudioContext on this tap
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtx.resume();
+
       peer = new Peer(null, {
-        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
       });
 
       peer.on('open', () => {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const silentStream = audioCtx.createMediaStreamDestination().stream;
-        const call = peer.call(targetGuideId, silentStream);
+        // Send a clean oscillator stream to initiate peer connection handshake
+        const dest = audioCtx.createMediaStreamDestination();
+        const silentCallStream = dest.stream;
+
+        const call = peer.call(targetGuideId, silentCallStream);
 
         if (!call) {
           joinBtn.disabled = false;
@@ -216,19 +287,27 @@
           return alert('Could not initiate call to Channel ' + chNum);
         }
 
-        call.on('stream', (remoteStream) => {
+        call.on('stream', (incomingStream) => {
+          remoteMediaStream = incomingStream;
           hideAll();
           document.getElementById('view-audience-player').classList.remove('hidden');
           document.getElementById('audience-ch-title').innerText = `Listening to Channel ${chNum}`;
+
           const audioEl = document.getElementById('remote-audio');
-          audioEl.srcObject = remoteStream;
-          audioEl.play().catch(() => {
+          audioEl.srcObject = remoteMediaStream;
+
+          // Attempt automatic playback
+          audioEl.play().then(() => {
+            document.getElementById('btn-audio-unmute').style.display = 'none';
+            document.getElementById('audio-status-text').style.display = 'block';
+          }).catch(() => {
+            // If iOS Safari requires user confirmation, show the button
             document.getElementById('btn-audio-unmute').style.display = 'block';
           });
         });
 
         call.on('close', () => {
-          alert('Tour broadcast has ended.');
+          alert('Broadcast ended by the guide.');
           location.reload();
         });
       });
@@ -236,13 +315,24 @@
       peer.on('error', () => {
         joinBtn.disabled = false;
         joinBtn.innerText = "🎧 Connect & Listen";
-        alert('Channel ' + chNum + ' not found. Ensure the guide has started broadcasting.');
+        alert('Channel ' + chNum + ' not found. Ensure the guide has started broadcasting first.');
       });
     }
 
-    function unmuteAudio() {
-      document.getElementById('remote-audio').play();
-      document.getElementById('btn-audio-unmute').style.display = 'none';
+    function playAudioStream() {
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const audioEl = document.getElementById('remote-audio');
+      if (remoteMediaStream) {
+        audioEl.srcObject = remoteMediaStream;
+      }
+      audioEl.play().then(() => {
+        document.getElementById('btn-audio-unmute').style.display = 'none';
+        document.getElementById('audio-status-text').style.display = 'block';
+      }).catch(err => {
+        alert('Audio play error: ' + err.message);
+      });
     }
   </script>
 </body>
