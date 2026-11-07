@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hactl ST1 Tour Audio</title>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <style>
+    :root {
+      --primary: #004b87;
+      --accent: #00897b;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --danger: #d32f2f;
+      --text: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 16px; display: flex; justify-content: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 420px; }
+    .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); margin-bottom: 16px; border: 1px solid #e2e8f0; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h2 { font-size: 1.25rem; color: var(--primary); }
+    .header p { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+    .hidden { display: none !important; }
+    .btn { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-accent { background: var(--accent); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .input-field { width: 100%; padding: 12px; margin-top: 6px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
+    .status-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; background: #fee2e2; color: #b91c1c; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #b91c1c; margin-right: 6px; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Hactl SuperTerminal 1</h2>
+      <p>Live Audio Tour Broadcast</p>
+    </div>
+
+    <!-- View 1: Select Role -->
+    <div id="view-role" class="card">
+      <h3 style="font-size: 1.05rem; margin-bottom: 14px; text-align: center;">Select Your Role</h3>
+      <button class="btn btn-primary" onclick="showAudienceView()">🎧 Audience / Visitor</button>
+      <button class="btn btn-accent" style="margin-top: 12px;" onclick="showGuideAuthView()">🎤 Tour Guide Login</button>
+    </div>
+
+    <!-- View 2: Guide Setup -->
+    <div id="view-guide-auth" class="card hidden">
+      <h3 style="font-size: 1.05rem; margin-bottom: 12px;">Tour Guide Setup</h3>
+      <label style="font-size: 0.85rem; font-weight: 600;">Tour Guide Passcode</label>
+      <input type="password" id="guide-passcode" class="input-field" placeholder="Enter Passcode" />
+
+      <label style="font-size: 0.85rem; font-weight: 600;">Channel Number</label>
+      <input type="number" id="guide-channel-no" class="input-field" value="1" />
+
+      <label style="font-size: 0.85rem; font-weight: 600;">Tour / Group Name</label>
+      <input type="text" id="guide-tour-name" class="input-field" placeholder="e.g. VIP Delegation" />
+
+      <button id="btn-start" class="btn btn-accent" onclick="startBroadcast()">🚀 Start Broadcast</button>
+      <button class="btn" style="background:#e2e8f0; margin-top:8px;" onclick="resetViews()">Back</button>
+    </div>
+
+    <!-- View 3: Guide Dashboard (On Air) -->
+    <div id="view-guide-live" class="card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
+        <span class="status-badge"><span class="live-dot"></span>LIVE ON AIR</span>
+        <span id="guide-listener-count" style="font-size: 0.85rem; font-weight: 600; color: #475569;">0 Connected</span>
+      </div>
+      <h3 id="guide-ch-title" style="color: var(--primary); margin-bottom: 8px;"></h3>
+      <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 16px;">Microphone active. Visitors can now listen to this channel.</p>
+      
+      <button id="btn-mute" class="btn btn-primary" onclick="toggleMute()">🎙️ Mute Microphone</button>
+      <button class="btn btn-danger" onclick="endBroadcast()">⏹️ End Tour</button>
+    </div>
+
+    <!-- View 4: Audience Join -->
+    <div id="view-audience-join" class="card hidden">
+      <h3 style="font-size: 1.05rem; margin-bottom: 12px;">Join Tour Channel</h3>
+      <label style="font-size: 0.85rem; font-weight: 600;">Channel Number</label>
+      <input type="number" id="audience-channel-no" class="input-field" value="1" />
+      <button id="btn-audience-join" class="btn btn-primary" onclick="joinChannel()">🎧 Connect & Listen</button>
+      <button class="btn" style="background:#e2e8f0; margin-top:8px;" onclick="resetViews()">Back</button>
+    </div>
+
+    <!-- View 5: Audience Receiver -->
+    <div id="view-audience-player" class="card hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px;">
+        <span class="status-badge" style="background:#dcfce7; color:#15803d;">CONNECTED</span>
+      </div>
+      <h3 id="audience-ch-title" style="color: var(--primary); margin-bottom: 8px;"></h3>
+      <p style="font-size:0.85rem; color:#64748b; margin-bottom:14px;">Connected to Tour Guide. Earphones recommended.</p>
+      <audio id="remote-audio" autoplay playsinline></audio>
+      <button id="btn-audio-unmute" class="btn btn-accent" onclick="unmuteAudio()">▶️ Tap to Hear Audio</button>
+      <button class="btn btn-danger" style="margin-top:10px;" onclick="location.reload()">Leave Channel</button>
+    </div>
+  </div>
+
+  <script>
+    const PASSCODE = "P18825-20261120";
+    const PREFIX = "hactl-st1-ch";
+    let peer = null, localStream = null, isMuted = false, activeCalls = [];
+
+    function hideAll() {
+      ['view-role', 'view-guide-auth', 'view-guide-live', 'view-audience-join', 'view-audience-player'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+    }
+    function resetViews() { hideAll(); document.getElementById('view-role').classList.remove('hidden'); }
+    function showGuideAuthView() { hideAll(); document.getElementById('view-guide-auth').classList.remove('hidden'); }
+    function showAudienceView() { hideAll(); document.getElementById('view-audience-join').classList.remove('hidden'); }
+
+    // --- Tour Guide Logic ---
+    async function startBroadcast() {
+      const code = document.getElementById('guide-passcode').value.trim();
+      const chNum = document.getElementById('guide-channel-no').value.trim() || '1';
+      const tourName = document.getElementById('guide-tour-name').value.trim() || 'ST1 Tour';
+      const startBtn = document.getElementById('btn-start');
+
+      if (code !== PASSCODE) return alert('Invalid Passcode!');
+
+      startBtn.disabled = true;
+      startBtn.innerText = "Requesting Microphone...";
+
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          video: false
+        });
+      } catch (err) {
+        startBtn.disabled = false;
+        startBtn.innerText = "🚀 Start Broadcast";
+        alert("Microphone Access Error: " + err.message);
+        return;
+      }
+
+      const peerId = `${PREFIX}-${chNum}`;
+      peer = new Peer(peerId, {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
+      });
+
+      peer.on('open', () => {
+        hideAll();
+        document.getElementById('view-guide-live').classList.remove('hidden');
+        document.getElementById('guide-ch-title').innerText = `Channel ${chNum} - ${tourName}`;
+      });
+
+      peer.on('error', (err) => {
+        startBtn.disabled = false;
+        startBtn.innerText = "🚀 Start Broadcast";
+        if (err.type === 'unavailable-id') {
+          alert(`Channel ${chNum} is already active by another guide. Choose another channel number.`);
+        } else {
+          alert('Network/Peer error: ' + err.type);
+        }
+      });
+
+      peer.on('call', (call) => {
+        call.answer(localStream);
+        activeCalls.push(call);
+        updateListenerCount();
+        call.on('close', () => {
+          activeCalls = activeCalls.filter(c => c !== call);
+          updateListenerCount();
+        });
+      });
+    }
+
+    function updateListenerCount() {
+      const el = document.getElementById('guide-listener-count');
+      if (el) el.innerText = `${activeCalls.length} Connected`;
+    }
+
+    function toggleMute() {
+      if (!localStream) return;
+      isMuted = !isMuted;
+      localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+      const btn = document.getElementById('btn-mute');
+      btn.innerText = isMuted ? '🔇 Unmute Microphone' : '🎙️ Mute Microphone';
+      btn.style.background = isMuted ? '#d32f2f' : 'var(--primary)';
+    }
+
+    function endBroadcast() {
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      if (peer) peer.destroy();
+      location.reload();
+    }
+
+    // --- Audience Logic ---
+    function joinChannel() {
+      const chNum = document.getElementById('audience-channel-no').value.trim() || '1';
+      const targetGuideId = `${PREFIX}-${chNum}`;
+      const joinBtn = document.getElementById('btn-audience-join');
+
+      joinBtn.disabled = true;
+      joinBtn.innerText = "Connecting...";
+
+      peer = new Peer(null, {
+        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+      });
+
+      peer.on('open', () => {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const silentStream = audioCtx.createMediaStreamDestination().stream;
+        const call = peer.call(targetGuideId, silentStream);
+
+        if (!call) {
+          joinBtn.disabled = false;
+          joinBtn.innerText = "🎧 Connect & Listen";
+          return alert('Could not initiate call to Channel ' + chNum);
+        }
+
+        call.on('stream', (remoteStream) => {
+          hideAll();
+          document.getElementById('view-audience-player').classList.remove('hidden');
+          document.getElementById('audience-ch-title').innerText = `Listening to Channel ${chNum}`;
+          const audioEl = document.getElementById('remote-audio');
+          audioEl.srcObject = remoteStream;
+          audioEl.play().catch(() => {
+            document.getElementById('btn-audio-unmute').style.display = 'block';
+          });
+        });
+
+        call.on('close', () => {
+          alert('Tour broadcast has ended.');
+          location.reload();
+        });
+      });
+
+      peer.on('error', () => {
+        joinBtn.disabled = false;
+        joinBtn.innerText = "🎧 Connect & Listen";
+        alert('Channel ' + chNum + ' not found. Ensure the guide has started broadcasting.');
+      });
+    }
+
+    function unmuteAudio() {
+      document.getElementById('remote-audio').play();
+      document.getElementById('btn-audio-unmute').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
