@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Hactl ST1 Live Tour & Translation</title>
+  <title>Hactl ST1 Live AI Voice Tour</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root {
@@ -30,9 +30,9 @@
     .status-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; background: #fee2e2; color: #b91c1c; }
     .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #b91c1c; margin-right: 6px; animation: pulse 1.2s infinite; }
     
-    /* Subtitle Window */
-    .subtitle-box { background: #0f172a; color: #38bdf8; border-radius: 10px; padding: 14px; min-height: 80px; max-height: 120px; overflow-y: auto; font-size: 1.05rem; line-height: 1.4; font-weight: 500; margin: 12px 0; border: 1px solid #1e293b; }
-    .original-text { font-size: 0.78rem; color: #94a3b8; margin-bottom: 4px; }
+    /* Live Subtitle & Translation Box */
+    .subtitle-box { background: #0f172a; color: #38bdf8; border-radius: 10px; padding: 14px; min-height: 85px; max-height: 140px; overflow-y: auto; font-size: 1.05rem; line-height: 1.4; font-weight: 500; margin: 12px 0; border: 1px solid #1e293b; }
+    .original-text { font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px; border-bottom: 1px solid #334155; padding-bottom: 4px; }
     
     .vu-meter-wrap { width: 100%; background: #e2e8f0; height: 14px; border-radius: 8px; overflow: hidden; margin: 10px 0; }
     .vu-meter-bar { width: 0%; height: 100%; background: #10b981; transition: width 0.05s linear; }
@@ -45,7 +45,7 @@
   <div class="container">
     <div class="header">
       <h2>Hactl SuperTerminal 1</h2>
-      <p>Live Audio Tour & Instant AI Translation</p>
+      <p>Live AI Voice Translation Tour</p>
     </div>
 
     <!-- View 1: Role Selection -->
@@ -65,14 +65,14 @@
       <label style="font-size: 0.85rem; font-weight: 600;">Channel Number</label>
       <input type="number" id="guide-channel-no" class="input-field" value="1" />
 
-      <label style="font-size: 0.85rem; font-weight: 600;">Spoken Language (Your Voice)</label>
+      <label style="font-size: 0.85rem; font-weight: 600;">Language You Will Speak</label>
       <select id="guide-spoken-lang" class="input-field">
-        <option value="en-US">English</option>
         <option value="zh-HK">Cantonese (粵語)</option>
         <option value="zh-CN">Mandarin (普通話)</option>
+        <option value="en-US">English</option>
       </select>
 
-      <button id="btn-start" class="btn btn-accent" onclick="startBroadcaster()">🚀 Start Broadcast & AI Captions</button>
+      <button id="btn-start" class="btn btn-accent" onclick="startBroadcaster()">🚀 Start Broadcast & AI Translation</button>
       <button class="btn" style="background:#e2e8f0; margin-top:8px;" onclick="resetViews()">Back</button>
     </div>
 
@@ -88,8 +88,8 @@
         <div id="mic-meter-bar" class="vu-meter-bar"></div>
       </div>
 
-      <label style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Live Speech Recognition:</label>
-      <div class="subtitle-box" id="guide-caption-box">Microphone active. Speak to test captions...</div>
+      <label style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Live Speech Transcribed:</label>
+      <div class="subtitle-box" id="guide-caption-box">Say something (e.g. 你好 / Welcome to Hactl)...</div>
 
       <button id="btn-mute" class="btn btn-primary" onclick="toggleMute()">🎙️ Mute Microphone</button>
       <button class="btn btn-danger" onclick="endTour()">⏹️ End Tour</button>
@@ -102,19 +102,19 @@
       <label style="font-size: 0.85rem; font-weight: 600;">Channel Number</label>
       <input type="number" id="audience-channel-no" class="input-field" value="1" />
 
-      <label style="font-size: 0.85rem; font-weight: 600;">Preferred Language</label>
+      <label style="font-size: 0.85rem; font-weight: 600;">Preferred Hearing Language</label>
       <select id="audience-lang-select" class="input-field">
-        <option value="en">English</option>
-        <option value="zh-TW">Traditional Chinese (繁體中文)</option>
-        <option value="zh-CN">Simplified Chinese (简体中文)</option>
-        <option value="ja">Japanese (日本語)</option>
-        <option value="ko">Korean (한국어)</option>
-        <option value="es">Spanish (Español)</option>
-        <option value="fr">French (Français)</option>
-        <option value="de">German (Deutsch)</option>
+        <option value="ja-JP" data-short="ja">Japanese (日本語)</option>
+        <option value="en-US" data-short="en">English</option>
+        <option value="zh-TW" data-short="zh-TW">Traditional Chinese (繁體中文)</option>
+        <option value="zh-CN" data-short="zh-CN">Mandarin (普通話)</option>
+        <option value="ko-KR" data-short="ko">Korean (한국어)</option>
+        <option value="es-ES" data-short="es">Spanish (Español)</option>
+        <option value="fr-FR" data-short="fr">French (Français)</option>
+        <option value="de-DE" data-short="de">German (Deutsch)</option>
       </select>
 
-      <button id="btn-join" class="btn btn-primary" onclick="joinChannel()">🎧 Connect & Listen</button>
+      <button id="btn-join" class="btn btn-primary" onclick="joinChannel()">🎧 Connect to Tour</button>
       <button class="btn" style="background:#e2e8f0; margin-top:8px;" onclick="resetViews()">Back</button>
       <div id="audience-join-log" class="log-tray">Ready to connect.</div>
     </div>
@@ -123,21 +123,23 @@
     <div id="view-audience-player" class="card hidden">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
         <span class="status-badge" style="background:#dcfce7; color:#15803d;">CONNECTED</span>
-        <span id="selected-lang-tag" style="font-size: 0.8rem; font-weight: 700; color: #0284c7;">EN</span>
+        <span id="selected-lang-tag" style="font-size: 0.85rem; font-weight: 700; color: #0284c7;">JA</span>
       </div>
       <h3 id="audience-ch-title" style="color: var(--primary); margin-bottom: 4px;"></h3>
       <p id="visitor-status" style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">Audio stream linked.</p>
 
-      <audio id="remote-audio" playsinline webkit-playsinline controls style="width: 100%; margin-bottom: 10px;"></audio>
-
-      <label style="font-size: 0.8rem; font-weight: 700; color: #334155;">AI Instant Translation Subtitles:</label>
+      <!-- Live AI Translation & Voice Status -->
+      <label style="font-size: 0.8rem; font-weight: 700; color: #334155;">Instant Translation & Voice:</label>
       <div class="subtitle-box">
-        <div id="sub-original" class="original-text">Guide's speech will appear here...</div>
-        <div id="sub-translated">Awaiting speech from guide...</div>
+        <div id="sub-original" class="original-text">Original: Awaiting speech...</div>
+        <div id="sub-translated">Translated: Waiting for guide...</div>
       </div>
 
-      <button id="btn-audio-unmute" class="btn btn-accent" onclick="forcePlayAudio()">🔊 Tap to Turn On Sound</button>
-      <button class="btn btn-danger" style="margin-top:10px;" onclick="location.reload()">Leave Channel</button>
+      <!-- Essential Button: Unlocks Native Safari Voice Synthesis -->
+      <button id="btn-audio-unmute" class="btn btn-accent" onclick="unlockAudioAndTTS()">🔊 Tap to Turn On Voice Translation</button>
+      <p id="tts-active-msg" style="font-size: 0.8rem; color: #16a34a; font-weight: bold; text-align: center; margin-top: 8px; display: none;">✅ AI Spoken Translation Enabled</p>
+
+      <button class="btn btn-danger" style="margin-top:14px;" onclick="location.reload()">Leave Channel</button>
     </div>
   </div>
 
@@ -145,34 +147,24 @@
     const PASSCODE = "P18825-20261120";
     const PREFIX = "hactl-st1-ch";
 
-    // Public STUN/TURN configuration to cross NAT/Firewalls
     const rtcConfig = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun.cloudflare.com:3478' },
-        {
-          urls: 'turn:openrelay.metered.ca:80',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        }
+        { urls: 'stun:stun.cloudflare.com:3478' }
       ]
     };
 
     let peer = null;
     let localStream = null;
     let isMuted = false;
-    let activeCalls = [];
+    let activeConnections = []; // Connected visitor data channels
     let speechRecognizer = null;
-    let selectedAudienceLang = "en";
+    let selectedAudienceLocale = "ja-JP";
+    let selectedAudienceShort = "ja";
+    let ttsUnlocked = false;
 
     function setLog(elementId, text) {
-      console.log(text);
       const el = document.getElementById(elementId);
       if (el) el.innerText = text;
     }
@@ -205,7 +197,7 @@
         });
       } catch (err) {
         startBtn.disabled = false;
-        startBtn.innerText = "🚀 Start Broadcast & AI Captions";
+        startBtn.innerText = "🚀 Start Broadcast & AI Translation";
         alert("Microphone Error: " + err.message);
         return;
       }
@@ -217,7 +209,7 @@
       peer = new Peer(guidePeerId, { config: rtcConfig });
 
       peer.on('open', (id) => {
-        setLog('guide-log', `Connected to Signaling Cloud as: ${id}`);
+        setLog('guide-log', `On Air. Channel ID: ${id}`);
         hideAll();
         document.getElementById('view-guide-live').classList.remove('hidden');
         document.getElementById('guide-ch-title').innerText = `Channel ${chNum}`;
@@ -225,7 +217,7 @@
 
       peer.on('error', (err) => {
         startBtn.disabled = false;
-        startBtn.innerText = "🚀 Start Broadcast & AI Captions";
+        startBtn.innerText = "🚀 Start Broadcast & AI Translation";
         if (err.type === 'unavailable-id') {
           alert(`Channel ${chNum} is already active! Choose another channel.`);
         } else {
@@ -233,14 +225,14 @@
         }
       });
 
-      // Guide answers incoming visitor calls directly with localStream
-      peer.on('call', (call) => {
-        call.answer(localStream);
-        activeCalls.push(call);
-        updateListenerCount();
-
-        call.on('close', () => {
-          activeCalls = activeCalls.filter(c => c !== call);
+      // Maintain direct P2P data channels with all audience members
+      peer.on('connection', (conn) => {
+        conn.on('open', () => {
+          activeConnections.push(conn);
+          updateListenerCount();
+        });
+        conn.on('close', () => {
+          activeConnections = activeConnections.filter(c => c !== conn);
           updateListenerCount();
         });
       });
@@ -248,26 +240,35 @@
 
     function initSpeechRecognition(lang) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) return;
+      if (!SpeechRecognition) {
+        alert("Speech Recognition is not supported on this browser version.");
+        return;
+      }
 
       speechRecognizer = new SpeechRecognition();
       speechRecognizer.continuous = true;
-      speechRecognizer.interimResults = true;
+      speechRecognizer.interimResults = false; // Send completed sentences for accurate translation
       speechRecognizer.lang = lang;
 
       speechRecognizer.onresult = (event) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          transcript += event.results[i][0].transcript;
+        const lastResult = event.results[event.results.length - 1];
+        if (lastResult.isFinal) {
+          const phrase = lastResult[0].transcript.trim();
+          if (!phrase) return;
+
+          document.getElementById('guide-caption-box').innerText = phrase;
+
+          // Send speech text directly across P2P data connection to all visitor devices
+          const payload = {
+            type: 'speech',
+            text: phrase,
+            srcLang: lang.split('-')[0] // 'zh' or 'en'
+          };
+
+          activeConnections.forEach(conn => {
+            if (conn.open) conn.send(payload);
+          });
         }
-        document.getElementById('guide-caption-box').innerText = transcript;
-        
-        // Broadcast caption via PeerJS server channel message or broadcast channel
-        localStorage.setItem('hactl_live_sub', JSON.stringify({
-          text: transcript,
-          srcLang: lang.split('-')[0],
-          time: Date.now()
-        }));
       };
 
       speechRecognizer.onerror = (e) => console.log("Speech notice:", e.error);
@@ -299,7 +300,7 @@
 
     function updateListenerCount() {
       const el = document.getElementById('guide-listeners');
-      if (el) el.innerText = `${activeCalls.length} Connected`;
+      if (el) el.innerText = `${activeConnections.length} Connected`;
     }
 
     function toggleMute() {
@@ -319,138 +320,112 @@
     }
 
     // --- Audience Logic ---
-    let globalIncomingStream = null;
-
     function joinChannel() {
       const chNum = document.getElementById('audience-channel-no').value.trim() || '1';
-      selectedAudienceLang = document.getElementById('audience-lang-select').value;
+      const langSelect = document.getElementById('audience-lang-select');
+      selectedAudienceLocale = langSelect.value;
+      selectedAudienceShort = langSelect.options[langSelect.selectedIndex].getAttribute('data-short');
       const targetGuideId = `${PREFIX}-${chNum}`;
       const joinBtn = document.getElementById('btn-join');
 
       joinBtn.disabled = true;
-      joinBtn.innerText = "Connecting to Relay...";
-      setLog('audience-join-log', 'Connecting to signaling server...');
+      joinBtn.innerText = "Connecting...";
+      setLog('audience-join-log', 'Connecting to guide channel...');
 
       peer = new Peer(null, { config: rtcConfig });
 
-      // Connection timeout watchdog (8 seconds)
-      const timeoutTimer = setTimeout(() => {
-        if (joinBtn.disabled && !globalIncomingStream) {
-          joinBtn.disabled = false;
-          joinBtn.innerText = "🎧 Connect & Listen";
-          setLog('audience-join-log', 'Connection timed out. Check if Guide is on air.');
-          alert("Connection timed out! Ensure Tour Guide has clicked 'Start Broadcast' on Channel " + chNum);
-        }
-      }, 9000);
-
       peer.on('open', (myVisitorId) => {
-        setLog('audience-join-log', `Visitor ready. Dialing guide on Channel ${chNum}...`);
+        // Direct reliable Data Connection to Guide
+        const conn = peer.connect(targetGuideId, { reliable: true });
 
-        // Generate synthetic silent audio track to initiate media call
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        gain.gain.value = 0.0001; // Silent
-        const dest = audioCtx.createMediaStreamDestination();
-        osc.connect(gain);
-        gain.connect(dest);
-        osc.start();
-
-        const call = peer.call(targetGuideId, dest.stream);
-
-        if (!call) {
-          clearTimeout(timeoutTimer);
-          joinBtn.disabled = false;
-          joinBtn.innerText = "🎧 Connect & Listen";
-          return alert('Could not initiate call to Channel ' + chNum);
-        }
-
-        call.on('stream', (incomingAudioStream) => {
-          clearTimeout(timeoutTimer);
-          globalIncomingStream = incomingAudioStream;
-
+        conn.on('open', () => {
           hideAll();
           document.getElementById('view-audience-player').classList.remove('hidden');
           document.getElementById('audience-ch-title').innerText = `Channel ${chNum}`;
-          document.getElementById('selected-lang-tag').innerText = selectedAudienceLang.toUpperCase();
-
-          const audioEl = document.getElementById('remote-audio');
-          audioEl.srcObject = incomingAudioStream;
-
-          audioEl.play().then(() => {
-            document.getElementById('visitor-status').innerText = '🟢 Playing live audio from Tour Guide';
-            document.getElementById('btn-audio-unmute').style.display = 'none';
-          }).catch(() => {
-            document.getElementById('btn-audio-unmute').style.display = 'block';
-          });
-
-          listenForLiveSubtitles();
+          document.getElementById('selected-lang-tag').innerText = selectedAudienceShort.toUpperCase();
         });
 
-        call.on('close', () => {
+        // Receive real-time speech directly from the Guide's device
+        conn.on('data', async (data) => {
+          if (data.type === 'speech') {
+            document.getElementById('sub-original').innerText = `Original: "${data.text}"`;
+            
+            // Translate the received text
+            const translatedText = await requestTranslation(data.text, data.srcLang, selectedAudienceShort);
+            document.getElementById('sub-translated').innerText = `Translated: "${translatedText}"`;
+
+            // Speak the translated text aloud through earphones/speaker
+            speakTranslatedVoice(translatedText, selectedAudienceLocale);
+          }
+        });
+
+        conn.on('close', () => {
           alert('Tour guide has ended this session.');
           location.reload();
         });
 
-        call.on('error', (err) => {
-          clearTimeout(timeoutTimer);
+        conn.on('error', (err) => {
           joinBtn.disabled = false;
-          joinBtn.innerText = "🎧 Connect & Listen";
-          setLog('audience-join-log', `Call error: ${err}`);
+          joinBtn.innerText = "🎧 Connect to Tour";
+          alert('Could not connect to Channel ' + chNum);
         });
       });
 
-      peer.on('error', (err) => {
-        clearTimeout(timeoutTimer);
+      peer.on('error', () => {
         joinBtn.disabled = false;
-        joinBtn.innerText = "🎧 Connect & Listen";
-        setLog('audience-join-log', `Peer Error: ${err.type}`);
-        alert('Could not find active Channel ' + chNum + '. Please confirm channel number with Guide.');
+        joinBtn.innerText = "🎧 Connect to Tour";
+        alert('Channel ' + chNum + ' not found. Ensure Tour Guide is on air.');
       });
     }
 
-    // Subtitle polling synchronized across participants
-    function listenForLiveSubtitles() {
-      let lastText = "";
-      setInterval(() => {
-        const raw = localStorage.getItem('hactl_live_sub');
-        if (!raw) return;
-        try {
-          const sub = JSON.parse(raw);
-          if (sub.text && sub.text !== lastText && (Date.now() - sub.time < 8000)) {
-            lastText = sub.text;
-            document.getElementById('sub-original').innerText = `Guide: "${sub.text}"`;
-            
-            if (sub.srcLang === selectedAudienceLang) {
-              document.getElementById('sub-translated').innerText = sub.text;
-            } else {
-              translateText(sub.text, sub.srcLang, selectedAudienceLang);
-            }
-          }
-        } catch(e){}
-      }, 800);
-    }
+    // Instant Translation API with Japanese, Chinese, English mapping
+    async function requestTranslation(text, fromLang, toLang) {
+      if (!text || text.trim() === "") return "";
+      if (fromLang === toLang) return text;
 
-    async function translateText(text, fromLang, toLang) {
-      if (!text || text.trim() === "") return;
       try {
-        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`);
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`;
+        const res = await fetch(url);
         const data = await res.json();
         if (data && data.responseData && data.responseData.translatedText) {
-          document.getElementById('sub-translated').innerText = data.responseData.translatedText;
+          return data.responseData.translatedText;
         }
       } catch (err) {
-        document.getElementById('sub-translated').innerText = text;
+        console.warn("Translation fallback:", err);
       }
+      return text;
     }
 
-    function forcePlayAudio() {
-      const audioEl = document.getElementById('remote-audio');
-      if (globalIncomingStream) audioEl.srcObject = globalIncomingStream;
-      audioEl.play().then(() => {
-        document.getElementById('visitor-status').innerText = '🟢 Playing live audio';
-        document.getElementById('btn-audio-unmute').style.display = 'none';
-      });
+    // AI Voice Synthesis (Text-to-Speech)
+    function speakTranslatedVoice(text, locale) {
+      if (!window.speechSynthesis) return;
+
+      window.speechSynthesis.cancel(); // Stop any pending speech
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = locale;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      // Select system native voice for locale if available
+      const voices = window.speechSynthesis.getVoices();
+      const matchedVoice = voices.find(v => v.lang.startsWith(locale.split('-')[0]));
+      if (matchedVoice) utterance.voice = matchedVoice;
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // iOS Safari requires a user tap to unlock SpeechSynthesis audio output
+    function unlockAudioAndTTS() {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        // Play an empty primed utterance to satisfy Safari's security gesture requirement
+        const prime = new SpeechSynthesisUtterance("");
+        window.speechSynthesis.speak(prime);
+        ttsUnlocked = true;
+      }
+      document.getElementById('btn-audio-unmute').style.display = 'none';
+      document.getElementById('tts-active-msg').style.display = 'block';
     }
   </script>
 </body>
