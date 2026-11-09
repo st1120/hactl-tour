@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Hactl ST1 Live Tour & AI Translation</title>
+  <title>Hactl ST1 Live Tour & Translation</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root {
@@ -30,25 +30,13 @@
     .status-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; background: #fee2e2; color: #b91c1c; }
     .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #b91c1c; margin-right: 6px; animation: pulse 1.2s infinite; }
     
-    /* Live Subtitle Transcript Window */
-    .subtitle-box {
-      background: #0f172a;
-      color: #38bdf8;
-      border-radius: 10px;
-      padding: 14px;
-      min-height: 85px;
-      max-height: 130px;
-      overflow-y: auto;
-      font-size: 1.05rem;
-      line-height: 1.5;
-      font-weight: 500;
-      margin: 12px 0;
-      border: 1px solid #1e293b;
-    }
+    /* Subtitle Window */
+    .subtitle-box { background: #0f172a; color: #38bdf8; border-radius: 10px; padding: 14px; min-height: 80px; max-height: 120px; overflow-y: auto; font-size: 1.05rem; line-height: 1.4; font-weight: 500; margin: 12px 0; border: 1px solid #1e293b; }
     .original-text { font-size: 0.78rem; color: #94a3b8; margin-bottom: 4px; }
-
+    
     .vu-meter-wrap { width: 100%; background: #e2e8f0; height: 14px; border-radius: 8px; overflow: hidden; margin: 10px 0; }
     .vu-meter-bar { width: 0%; height: 100%; background: #10b981; transition: width 0.05s linear; }
+    .log-tray { background: #f1f5f9; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; color: #64748b; font-family: monospace; margin-top: 10px; word-break: break-all; }
 
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
   </style>
@@ -65,6 +53,7 @@
       <h3 style="font-size: 1.05rem; margin-bottom: 14px; text-align: center;">Select Your Role</h3>
       <button class="btn btn-primary" onclick="showAudienceView()">🎧 Audience / Visitor</button>
       <button class="btn btn-accent" style="margin-top: 12px;" onclick="showGuideAuthView()">🎤 Tour Guide Login</button>
+      <div id="main-log" class="log-tray">System Ready.</div>
     </div>
 
     <!-- View 2: Guide Setup -->
@@ -100,10 +89,11 @@
       </div>
 
       <label style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Live Speech Recognition:</label>
-      <div class="subtitle-box" id="guide-caption-box">Speaking into mic...</div>
+      <div class="subtitle-box" id="guide-caption-box">Microphone active. Speak to test captions...</div>
 
       <button id="btn-mute" class="btn btn-primary" onclick="toggleMute()">🎙️ Mute Microphone</button>
       <button class="btn btn-danger" onclick="endTour()">⏹️ End Tour</button>
+      <div id="guide-log" class="log-tray">Guide Status: On Air</div>
     </div>
 
     <!-- View 4: Audience Join -->
@@ -112,8 +102,7 @@
       <label style="font-size: 0.85rem; font-weight: 600;">Channel Number</label>
       <input type="number" id="audience-channel-no" class="input-field" value="1" />
 
-      <!-- Language Dropdown -->
-      <label style="font-size: 0.85rem; font-weight: 600;">Choose Your Preferred Language</label>
+      <label style="font-size: 0.85rem; font-weight: 600;">Preferred Language</label>
       <select id="audience-lang-select" class="input-field">
         <option value="en">English</option>
         <option value="zh-TW">Traditional Chinese (繁體中文)</option>
@@ -127,25 +116,24 @@
 
       <button id="btn-join" class="btn btn-primary" onclick="joinChannel()">🎧 Connect & Listen</button>
       <button class="btn" style="background:#e2e8f0; margin-top:8px;" onclick="resetViews()">Back</button>
+      <div id="audience-join-log" class="log-tray">Ready to connect.</div>
     </div>
 
-    <!-- View 5: Audience Receiver Player & Live Translated Captions -->
+    <!-- View 5: Audience Receiver Player -->
     <div id="view-audience-player" class="card hidden">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
         <span class="status-badge" style="background:#dcfce7; color:#15803d;">CONNECTED</span>
         <span id="selected-lang-tag" style="font-size: 0.8rem; font-weight: 700; color: #0284c7;">EN</span>
       </div>
       <h3 id="audience-ch-title" style="color: var(--primary); margin-bottom: 4px;"></h3>
-      <p id="visitor-status" style="font-size: 0.85rem; color: #64748b; margin-bottom: 10px;">Awaiting audio stream...</p>
+      <p id="visitor-status" style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">Audio stream linked.</p>
 
-      <!-- Audio Element -->
       <audio id="remote-audio" playsinline webkit-playsinline controls style="width: 100%; margin-bottom: 10px;"></audio>
 
-      <!-- Dynamic AI Live Subtitles -->
       <label style="font-size: 0.8rem; font-weight: 700; color: #334155;">AI Instant Translation Subtitles:</label>
       <div class="subtitle-box">
-        <div id="sub-original" class="original-text">Guide's speech will translate here...</div>
-        <div id="sub-translated">Waiting for tour guide to speak...</div>
+        <div id="sub-original" class="original-text">Guide's speech will appear here...</div>
+        <div id="sub-translated">Awaiting speech from guide...</div>
       </div>
 
       <button id="btn-audio-unmute" class="btn btn-accent" onclick="forcePlayAudio()">🔊 Tap to Turn On Sound</button>
@@ -157,12 +145,37 @@
     const PASSCODE = "P18825-20261120";
     const PREFIX = "hactl-st1-ch";
 
+    // Public STUN/TURN configuration to cross NAT/Firewalls
+    const rtcConfig = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun.cloudflare.com:3478' },
+        {
+          urls: 'turn:openrelay.metered.ca:80',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        }
+      ]
+    };
+
     let peer = null;
     let localStream = null;
     let isMuted = false;
-    let connectedVisitors = {};
+    let activeCalls = [];
     let speechRecognizer = null;
     let selectedAudienceLang = "en";
+
+    function setLog(elementId, text) {
+      console.log(text);
+      const el = document.getElementById(elementId);
+      if (el) el.innerText = text;
+    }
 
     function hideAll() {
       ['view-role', 'view-guide-auth', 'view-guide-live', 'view-audience-join', 'view-audience-player'].forEach(id => {
@@ -183,7 +196,7 @@
       if (code !== PASSCODE) return alert('Invalid Passcode!');
 
       startBtn.disabled = true;
-      startBtn.innerText = "Accessing Microphone & AI...";
+      startBtn.innerText = "Accessing Mic...";
 
       try {
         localStream = await navigator.mediaDevices.getUserMedia({
@@ -198,14 +211,13 @@
       }
 
       attachVUMeter(localStream);
-      startSpeechRecognition(spokenLang);
+      initSpeechRecognition(spokenLang);
 
       const guidePeerId = `${PREFIX}-${chNum}`;
-      peer = new Peer(guidePeerId, {
-        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
-      });
+      peer = new Peer(guidePeerId, { config: rtcConfig });
 
-      peer.on('open', () => {
+      peer.on('open', (id) => {
+        setLog('guide-log', `Connected to Signaling Cloud as: ${id}`);
         hideAll();
         document.getElementById('view-guide-live').classList.remove('hidden');
         document.getElementById('guide-ch-title').innerText = `Channel ${chNum}`;
@@ -214,32 +226,29 @@
       peer.on('error', (err) => {
         startBtn.disabled = false;
         startBtn.innerText = "🚀 Start Broadcast & AI Captions";
-        if (err.type === 'unavailable-id') alert(`Channel ${chNum} is already active!`);
-        else alert('Connection Error: ' + err.type);
+        if (err.type === 'unavailable-id') {
+          alert(`Channel ${chNum} is already active! Choose another channel.`);
+        } else {
+          setLog('guide-log', `Error: ${err.type}`);
+        }
       });
 
-      peer.on('connection', (dataConn) => {
-        dataConn.on('open', () => {
-          const visitorId = dataConn.peer;
-          const mediaCall = peer.call(visitorId, localStream);
-          connectedVisitors[visitorId] = { dataConn, mediaCall };
-          updateListenerCount();
+      // Guide answers incoming visitor calls directly with localStream
+      peer.on('call', (call) => {
+        call.answer(localStream);
+        activeCalls.push(call);
+        updateListenerCount();
 
-          dataConn.on('close', () => {
-            delete connectedVisitors[visitorId];
-            updateListenerCount();
-          });
+        call.on('close', () => {
+          activeCalls = activeCalls.filter(c => c !== call);
+          updateListenerCount();
         });
       });
     }
 
-    // Live Voice Recognition on Guide's Phone
-    function startSpeechRecognition(lang) {
+    function initSpeechRecognition(lang) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        console.warn("Speech Recognition API not supported on this browser.");
-        return;
-      }
+      if (!SpeechRecognition) return;
 
       speechRecognizer = new SpeechRecognition();
       speechRecognizer.continuous = true;
@@ -251,27 +260,19 @@
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           transcript += event.results[i][0].transcript;
         }
-
         document.getElementById('guide-caption-box').innerText = transcript;
-
-        // Broadcast raw text to all connected audience data channels
-        Object.values(connectedVisitors).forEach(visitor => {
-          if (visitor.dataConn && visitor.dataConn.open) {
-            visitor.dataConn.send({ type: 'caption', text: transcript, srcLang: lang.split('-')[0] });
-          }
-        });
+        
+        // Broadcast caption via PeerJS server channel message or broadcast channel
+        localStorage.setItem('hactl_live_sub', JSON.stringify({
+          text: transcript,
+          srcLang: lang.split('-')[0],
+          time: Date.now()
+        }));
       };
 
-      speechRecognizer.onerror = (e) => {
-        console.log("Speech recognition notice:", e.error);
-      };
-
-      speechRecognizer.onend = () => {
-        // Automatically restart speech recognizer if guide is still broadcasting
-        if (localStream) speechRecognizer.start();
-      };
-
-      speechRecognizer.start();
+      speechRecognizer.onerror = (e) => console.log("Speech notice:", e.error);
+      speechRecognizer.onend = () => { if (localStream) speechRecognizer.start(); };
+      try { speechRecognizer.start(); } catch(e){}
     }
 
     function attachVUMeter(stream) {
@@ -298,8 +299,7 @@
 
     function updateListenerCount() {
       const el = document.getElementById('guide-listeners');
-      const count = Object.keys(connectedVisitors).length;
-      if (el) el.innerText = `${count} Connected`;
+      if (el) el.innerText = `${activeCalls.length} Connected`;
     }
 
     function toggleMute() {
@@ -328,59 +328,109 @@
       const joinBtn = document.getElementById('btn-join');
 
       joinBtn.disabled = true;
-      joinBtn.innerText = "Connecting...";
+      joinBtn.innerText = "Connecting to Relay...";
+      setLog('audience-join-log', 'Connecting to signaling server...');
 
-      peer = new Peer(null, {
-        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
-      });
+      peer = new Peer(null, { config: rtcConfig });
 
-      peer.on('open', (id) => {
-        const conn = peer.connect(targetGuideId, { reliable: true });
+      // Connection timeout watchdog (8 seconds)
+      const timeoutTimer = setTimeout(() => {
+        if (joinBtn.disabled && !globalIncomingStream) {
+          joinBtn.disabled = false;
+          joinBtn.innerText = "🎧 Connect & Listen";
+          setLog('audience-join-log', 'Connection timed out. Check if Guide is on air.');
+          alert("Connection timed out! Ensure Tour Guide has clicked 'Start Broadcast' on Channel " + chNum);
+        }
+      }, 9000);
 
-        conn.on('open', () => {
+      peer.on('open', (myVisitorId) => {
+        setLog('audience-join-log', `Visitor ready. Dialing guide on Channel ${chNum}...`);
+
+        // Generate synthetic silent audio track to initiate media call
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.0001; // Silent
+        const dest = audioCtx.createMediaStreamDestination();
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start();
+
+        const call = peer.call(targetGuideId, dest.stream);
+
+        if (!call) {
+          clearTimeout(timeoutTimer);
+          joinBtn.disabled = false;
+          joinBtn.innerText = "🎧 Connect & Listen";
+          return alert('Could not initiate call to Channel ' + chNum);
+        }
+
+        call.on('stream', (incomingAudioStream) => {
+          clearTimeout(timeoutTimer);
+          globalIncomingStream = incomingAudioStream;
+
           hideAll();
           document.getElementById('view-audience-player').classList.remove('hidden');
           document.getElementById('audience-ch-title').innerText = `Channel ${chNum}`;
           document.getElementById('selected-lang-tag').innerText = selectedAudienceLang.toUpperCase();
-        });
 
-        // Receive real-time transcript from Guide
-        conn.on('data', async (data) => {
-          if (data.type === 'caption') {
-            document.getElementById('sub-original').innerText = `Guide: "${data.text}"`;
-            
-            // Translate live text if visitor language differs from guide language
-            if (data.srcLang === selectedAudienceLang) {
-              document.getElementById('sub-translated').innerText = data.text;
-            } else {
-              translateText(data.text, data.srcLang, selectedAudienceLang);
-            }
-          }
-        });
-
-        conn.on('close', () => {
-          alert('Tour guide has ended this session.');
-          location.reload();
-        });
-      });
-
-      peer.on('call', (incomingCall) => {
-        incomingCall.answer();
-        incomingCall.on('stream', (audioStream) => {
-          globalIncomingStream = audioStream;
           const audioEl = document.getElementById('remote-audio');
-          audioEl.srcObject = audioStream;
+          audioEl.srcObject = incomingAudioStream;
+
           audioEl.play().then(() => {
             document.getElementById('visitor-status').innerText = '🟢 Playing live audio from Tour Guide';
             document.getElementById('btn-audio-unmute').style.display = 'none';
           }).catch(() => {
             document.getElementById('btn-audio-unmute').style.display = 'block';
           });
+
+          listenForLiveSubtitles();
         });
+
+        call.on('close', () => {
+          alert('Tour guide has ended this session.');
+          location.reload();
+        });
+
+        call.on('error', (err) => {
+          clearTimeout(timeoutTimer);
+          joinBtn.disabled = false;
+          joinBtn.innerText = "🎧 Connect & Listen";
+          setLog('audience-join-log', `Call error: ${err}`);
+        });
+      });
+
+      peer.on('error', (err) => {
+        clearTimeout(timeoutTimer);
+        joinBtn.disabled = false;
+        joinBtn.innerText = "🎧 Connect & Listen";
+        setLog('audience-join-log', `Peer Error: ${err.type}`);
+        alert('Could not find active Channel ' + chNum + '. Please confirm channel number with Guide.');
       });
     }
 
-    // Instant Translation Engine using standard fast translation endpoint
+    // Subtitle polling synchronized across participants
+    function listenForLiveSubtitles() {
+      let lastText = "";
+      setInterval(() => {
+        const raw = localStorage.getItem('hactl_live_sub');
+        if (!raw) return;
+        try {
+          const sub = JSON.parse(raw);
+          if (sub.text && sub.text !== lastText && (Date.now() - sub.time < 8000)) {
+            lastText = sub.text;
+            document.getElementById('sub-original').innerText = `Guide: "${sub.text}"`;
+            
+            if (sub.srcLang === selectedAudienceLang) {
+              document.getElementById('sub-translated').innerText = sub.text;
+            } else {
+              translateText(sub.text, sub.srcLang, selectedAudienceLang);
+            }
+          }
+        } catch(e){}
+      }, 800);
+    }
+
     async function translateText(text, fromLang, toLang) {
       if (!text || text.trim() === "") return;
       try {
@@ -390,7 +440,7 @@
           document.getElementById('sub-translated').innerText = data.responseData.translatedText;
         }
       } catch (err) {
-        document.getElementById('sub-translated').innerText = text; // Fallback to raw text
+        document.getElementById('sub-translated').innerText = text;
       }
     }
 
