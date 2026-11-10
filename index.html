@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Hactl ST1 Live AI Voice Tour</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- OpenCC Chinese Dialect & Script Converter Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
   <style>
     :root {
       --primary: #004b87;
@@ -89,7 +91,7 @@
       </div>
 
       <label style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Live Speech Transcribed:</label>
-      <div class="subtitle-box" id="guide-caption-box">Say something (e.g. 你好 / Welcome to Hactl)...</div>
+      <div class="subtitle-box" id="guide-caption-box">Say something (e.g. 你好 / 歡迎嚟到 Hactl)...</div>
 
       <button id="btn-mute" class="btn btn-primary" onclick="toggleMute()">🎙️ Mute Microphone</button>
       <button class="btn btn-danger" onclick="endTour()">⏹️ End Tour</button>
@@ -104,10 +106,10 @@
 
       <label style="font-size: 0.85rem; font-weight: 600;">Preferred Hearing Language</label>
       <select id="audience-lang-select" class="input-field">
+        <option value="zh-CN" data-short="zh-CN">Mandarin / 普通話 (Mainland)</option>
         <option value="ja-JP" data-short="ja">Japanese (日本語)</option>
         <option value="en-US" data-short="en">English</option>
-        <option value="zh-TW" data-short="zh-TW">Traditional Chinese (繁體中文)</option>
-        <option value="zh-CN" data-short="zh-CN">Mandarin (普通話)</option>
+        <option value="zh-HK" data-short="zh-HK">Cantonese (粵語)</option>
         <option value="ko-KR" data-short="ko">Korean (한국어)</option>
         <option value="es-ES" data-short="es">Spanish (Español)</option>
         <option value="fr-FR" data-short="fr">French (Français)</option>
@@ -123,19 +125,17 @@
     <div id="view-audience-player" class="card hidden">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
         <span class="status-badge" style="background:#dcfce7; color:#15803d;">CONNECTED</span>
-        <span id="selected-lang-tag" style="font-size: 0.85rem; font-weight: 700; color: #0284c7;">JA</span>
+        <span id="selected-lang-tag" style="font-size: 0.85rem; font-weight: 700; color: #0284c7;">MANDARIN</span>
       </div>
       <h3 id="audience-ch-title" style="color: var(--primary); margin-bottom: 4px;"></h3>
       <p id="visitor-status" style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">Audio stream linked.</p>
 
-      <!-- Live AI Translation & Voice Status -->
       <label style="font-size: 0.8rem; font-weight: 700; color: #334155;">Instant Translation & Voice:</label>
       <div class="subtitle-box">
         <div id="sub-original" class="original-text">Original: Awaiting speech...</div>
         <div id="sub-translated">Translated: Waiting for guide...</div>
       </div>
 
-      <!-- Essential Button: Unlocks Native Safari Voice Synthesis -->
       <button id="btn-audio-unmute" class="btn btn-accent" onclick="unlockAudioAndTTS()">🔊 Tap to Turn On Voice Translation</button>
       <p id="tts-active-msg" style="font-size: 0.8rem; color: #16a34a; font-weight: bold; text-align: center; margin-top: 8px; display: none;">✅ AI Spoken Translation Enabled</p>
 
@@ -158,11 +158,53 @@
     let peer = null;
     let localStream = null;
     let isMuted = false;
-    let activeConnections = []; // Connected visitor data channels
+    let activeConnections = [];
     let speechRecognizer = null;
-    let selectedAudienceLocale = "ja-JP";
-    let selectedAudienceShort = "ja";
-    let ttsUnlocked = false;
+    let selectedAudienceLocale = "zh-CN";
+    let selectedAudienceShort = "zh-CN";
+
+    // Initialize OpenCC converter for Cantonese (HK) -> Mandarin (Mainland Simplified)
+    let hk2cnConverter = null;
+    try {
+      if (window.OpenCC) {
+        hk2cnConverter = OpenCC.Converter({ from: 'hk', to: 'cn' });
+      }
+    } catch(e) {
+      console.warn("OpenCC init deferred:", e);
+    }
+
+    // Common Spoken Cantonese to Mandarin Vocabulary Map
+    const cantoOralToMandarinDict = {
+      "食咗飯未": "吃过饭了吗",
+      "食咗": "吃了",
+      "食飯": "吃饭",
+      "食": "吃",
+      "飲": "喝",
+      "嚟到": "来到",
+      "嚟": "来",
+      "喺邊度": "在哪里",
+      "喺度": "在这里",
+      "喺": "在",
+      "點樣": "怎样",
+      "點解": "为什么",
+      "邊個": "谁",
+      "邊度": "哪里",
+      "乜嘢": "什么",
+      "咁樣": "这样",
+      "佢哋": "他们",
+      "我哋": "我们",
+      "你哋": "你们",
+      "佢": "他",
+      "冇": "没有",
+      "唔好": "不要",
+      "唔係": "不是",
+      "唔該": "谢谢",
+      "多謝": "谢谢",
+      "靚": "漂亮",
+      "嘅": "的",
+      "睇下": "看一下",
+      "睇": "看"
+    };
 
     function setLog(elementId, text) {
       const el = document.getElementById(elementId);
@@ -225,7 +267,6 @@
         }
       });
 
-      // Maintain direct P2P data channels with all audience members
       peer.on('connection', (conn) => {
         conn.on('open', () => {
           activeConnections.push(conn);
@@ -247,8 +288,8 @@
 
       speechRecognizer = new SpeechRecognition();
       speechRecognizer.continuous = true;
-      speechRecognizer.interimResults = false; // Send completed sentences for accurate translation
-      speechRecognizer.lang = lang;
+      speechRecognizer.interimResults = false;
+      speechRecognizer.lang = lang; // 'zh-HK'
 
       speechRecognizer.onresult = (event) => {
         const lastResult = event.results[event.results.length - 1];
@@ -258,11 +299,10 @@
 
           document.getElementById('guide-caption-box').innerText = phrase;
 
-          // Send speech text directly across P2P data connection to all visitor devices
           const payload = {
             type: 'speech',
             text: phrase,
-            srcLang: lang.split('-')[0] // 'zh' or 'en'
+            srcLang: lang // 'zh-HK'
           };
 
           activeConnections.forEach(conn => {
@@ -323,7 +363,7 @@
     function joinChannel() {
       const chNum = document.getElementById('audience-channel-no').value.trim() || '1';
       const langSelect = document.getElementById('audience-lang-select');
-      selectedAudienceLocale = langSelect.value;
+      selectedAudienceLocale = langSelect.value; // 'zh-CN'
       selectedAudienceShort = langSelect.options[langSelect.selectedIndex].getAttribute('data-short');
       const targetGuideId = `${PREFIX}-${chNum}`;
       const joinBtn = document.getElementById('btn-join');
@@ -334,28 +374,26 @@
 
       peer = new Peer(null, { config: rtcConfig });
 
-      peer.on('open', (myVisitorId) => {
-        // Direct reliable Data Connection to Guide
+      peer.on('open', () => {
         const conn = peer.connect(targetGuideId, { reliable: true });
 
         conn.on('open', () => {
           hideAll();
           document.getElementById('view-audience-player').classList.remove('hidden');
           document.getElementById('audience-ch-title').innerText = `Channel ${chNum}`;
-          document.getElementById('selected-lang-tag').innerText = selectedAudienceShort.toUpperCase();
+          document.getElementById('selected-lang-tag').innerText = langSelect.options[langSelect.selectedIndex].text.split(' ')[0].toUpperCase();
         });
 
-        // Receive real-time speech directly from the Guide's device
         conn.on('data', async (data) => {
           if (data.type === 'speech') {
             document.getElementById('sub-original').innerText = `Original: "${data.text}"`;
             
-            // Translate the received text
-            const translatedText = await requestTranslation(data.text, data.srcLang, selectedAudienceShort);
+            // Translate dialect/language
+            const translatedText = await requestTranslation(data.text, data.srcLang, selectedAudienceLocale);
             document.getElementById('sub-translated').innerText = `Translated: "${translatedText}"`;
 
-            // Speak the translated text aloud through earphones/speaker
-            speakTranslatedVoice(translatedText, selectedAudienceLocale);
+            // Speak in authentic Mandarin (or chosen language)
+            speakWithSpecificVoice(translatedText, selectedAudienceLocale);
           }
         });
 
@@ -364,7 +402,7 @@
           location.reload();
         });
 
-        conn.on('error', (err) => {
+        conn.on('error', () => {
           joinBtn.disabled = false;
           joinBtn.innerText = "🎧 Connect to Tour";
           alert('Could not connect to Channel ' + chNum);
@@ -378,13 +416,43 @@
       });
     }
 
-    // Instant Translation API with Japanese, Chinese, English mapping
-    async function requestTranslation(text, fromLang, toLang) {
+    // High-Fidelity Dialect & Multi-Language Translation
+    async function requestTranslation(text, fromLocale, toLocale) {
       if (!text || text.trim() === "") return "";
-      if (fromLang === toLang) return text;
+
+      // 1. SPECIFIC CASE: Cantonese (zh-HK) to Mandarin (zh-CN)
+      if (fromLocale === 'zh-HK' && (toLocale === 'zh-CN' || toLocale.startsWith('zh-CN'))) {
+        let converted = text;
+
+        // Apply oral Cantonese vocabulary transformation
+        for (const [canto, mandarin] of Object.entries(cantoOralToMandarinDict)) {
+          converted = converted.replaceAll(canto, mandarin);
+        }
+
+        // Apply OpenCC Traditional HK -> Simplified Mainland Chinese
+        try {
+          if (!hk2cnConverter && window.OpenCC) {
+            hk2cnConverter = OpenCC.Converter({ from: 'hk', to: 'cn' });
+          }
+          if (hk2cnConverter) {
+            converted = hk2cnConverter(converted);
+          }
+        } catch(e) {
+          console.warn("OpenCC conversion fallback:", e);
+        }
+
+        return converted;
+      }
+
+      // If exactly identical locale
+      if (fromLocale === toLocale) return text;
+
+      // 2. Foreign language translation (e.g. Cantonese -> Japanese, English, etc.)
+      const fromShort = fromLocale.split('-')[0];
+      const toShort = toLocale.split('-')[0];
 
       try {
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`;
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromShort}|${toShort}`;
         const res = await fetch(url);
         const data = await res.json();
         if (data && data.responseData && data.responseData.translatedText) {
@@ -396,36 +464,56 @@
       return text;
     }
 
-    // AI Voice Synthesis (Text-to-Speech)
-    function speakTranslatedVoice(text, locale) {
+    // Precise Voice Engine Selector (prevents iOS from using Cantonese for Mandarin)
+    function speakWithSpecificVoice(text, targetLocale) {
       if (!window.speechSynthesis) return;
 
-      window.speechSynthesis.cancel(); // Stop any pending speech
+      window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = locale;
+      utterance.lang = targetLocale;
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
 
-      // Select system native voice for locale if available
       const voices = window.speechSynthesis.getVoices();
-      const matchedVoice = voices.find(v => v.lang.startsWith(locale.split('-')[0]));
-      if (matchedVoice) utterance.voice = matchedVoice;
+
+      if (targetLocale === 'zh-CN') {
+        // Enforce Mainland Mandarin voice on iOS (Ting-Ting, Tian-Tian, Yu-shu, Li-mu, or Google 普通话)
+        const mandarinVoice = voices.find(v => 
+          (v.lang === 'zh-CN' || v.lang === 'cmn-Hans-CN') && 
+          !v.name.includes('Cantonese') && 
+          !v.name.includes('Hong Kong')
+        );
+        if (mandarinVoice) {
+          utterance.voice = mandarinVoice;
+        }
+      } else {
+        // Standard voice match for Japanese, English, etc.
+        const matched = voices.find(v => v.lang.startsWith(targetLocale.split('-')[0]));
+        if (matched) utterance.voice = matched;
+      }
 
       window.speechSynthesis.speak(utterance);
     }
 
-    // iOS Safari requires a user tap to unlock SpeechSynthesis audio output
+    // Safari unlock gesture handler
     function unlockAudioAndTTS() {
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
-        // Play an empty primed utterance to satisfy Safari's security gesture requirement
+        // Warm up and cache available device voices
+        window.speechSynthesis.getVoices();
         const prime = new SpeechSynthesisUtterance("");
         window.speechSynthesis.speak(prime);
-        ttsUnlocked = true;
       }
       document.getElementById('btn-audio-unmute').style.display = 'none';
       document.getElementById('tts-active-msg').style.display = 'block';
+    }
+
+    // Pre-cache voices when page loads
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
     }
   </script>
 </body>
